@@ -845,6 +845,9 @@ def build(rank, args):
             gather_all_token_logits=args.gather_all_token_logits,
             lora_target_modules=args.lora_config.lora_target_modules,
         )
+        # Allow hardware compatibility
+        builder_config.trt_builder_config.hardware_compatibility_level = trt.HardwareCompatibilityLevel.AMPERE_PLUS
+
         engine_name = get_engine_name(MODEL_NAME, args.dtype, args.tp_size,
                                       args.pp_size, cur_rank)
         engine = build_rank_engine(builder, builder_config, engine_name,
