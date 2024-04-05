@@ -129,6 +129,8 @@ class Builder():
                               strongly_typed: bool = False,
                               opt_level: Optional[int] = None,
                               profiling_verbosity: str = "layer_names_only",
+                              strip_plan: bool = False,
+                              hardware_compatible: bool = False,
                               **kwargs) -> BuilderConfig:
         ''' @brief Create a builder config with given precisions and timing cache
             @param precision: one of allowed precisions, defined in Builder._ALLOWED_PRECISIONS
@@ -180,8 +182,19 @@ class Builder():
         if use_refit:
             config.set_flag(trt.BuilderFlag.REFIT)
 
+        if strip_plan:
+            trt_major_ver = int(trt.__version__.split('.')[0])
+            if trt_major_ver >= 10:
+                config.set_flag(trt.BuilderFlag.STRIP_PLAN)
+                config.clear_flag(trt.BuilderFlag.REFIT_IDENTICAL)
+            else:
+                config.set_flag(trt.BuilderFlag.WEIGHTLESS)
+
         if opt_level is not None:
             config.builder_optimization_level = opt_level
+
+        if hardware_compatible:
+            config.hardware_compatibility_level = trt.HardwareCompatibilityLevel.AMPERE_PLUS
 
         # Set TRT Engine profiling verbosity
         if profiling_verbosity == "detailed":
@@ -427,6 +440,8 @@ class BuildConfig:
     enable_debug_output: bool = False
     max_draft_len: int = 0
     use_refit: bool = False
+    strip_plan: bool = False
+    hardware_compatible: bool = False
     input_timing_cache: str = None
     output_timing_cache: str = None
     lora_config: LoraBuildConfig = LoraBuildConfig()
@@ -458,6 +473,8 @@ class BuildConfig:
         enable_debug_output = config.pop('enable_debug_output', False)
         max_draft_len = config.pop('max_draft_len', 0)
         use_refit = config.pop('use_refit', False)
+        strip_plan = config.pop('strip_plan', False)
+        hardware_compatible = config.pop('hardware_compatible', False)
         input_timing_cache = config.pop('input_timing_cache', None)
         output_timing_cache = config.pop('output_timing_cache', None)
         lora_config = LoraBuildConfig.from_dict(config.get('lora_config', {}))
@@ -489,6 +506,8 @@ class BuildConfig:
             enable_debug_output=enable_debug_output,
             max_draft_len=max_draft_len,
             use_refit=use_refit,
+            strip_plan=strip_plan,
+            hardware_compatible=hardware_compatible,
             input_timing_cache=input_timing_cache,
             output_timing_cache=output_timing_cache,
             lora_config=lora_config,
@@ -648,6 +667,8 @@ def build(model: PretrainedModel, build_config: BuildConfig) -> Engine:
     builder_config = builder.create_builder_config(
         precision=model.config.dtype,
         use_refit=build_config.use_refit,
+        strip_plan=build_config.strip_plan,
+        hardware_compatible=build_config.hardware_compatible,
         timing_cache=build_config.input_timing_cache,
         int8=(model.config.quant_mode.has_act_or_weight_quant()
               and not model.config.quant_mode.has_per_group_scaling())

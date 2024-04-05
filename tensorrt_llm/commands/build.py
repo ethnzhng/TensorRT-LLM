@@ -224,6 +224,24 @@ def parse_arguments():
         help=
         'Run through the build process except the actual Engine build for debugging. '
     )
+    parser.add_argument(
+        '--use_refit',
+        default=False,
+        action='store_true',
+        help='Build engines to be refittable'
+    )
+    parser.add_argument(
+        '--strip_plan',
+        default=False,
+        action='store_true',
+        help='Strip weights from engines'
+    )
+    parser.add_argument(
+        '--hardware_compatible',
+        default=False,
+        action='store_true',
+        help='Build engines to be hardware compatible'
+    )
 
     plugin_config_parser = parser.add_argument_group("plugin_config")
     add_plugin_argument(plugin_config_parser)
@@ -439,6 +457,9 @@ def main():
                 'gather_generation_logits': args.gather_generation_logits,
                 'strongly_typed': args.strongly_typed,
                 'builder_opt': args.builder_opt,
+                'use_refit': args.use_refit,
+                'strip_plan': args.strip_plan,
+                'hardware_compatible': args.hardware_compatible,
                 'weight_sparsity': args.weight_sparsity,
                 'profiling_verbosity': args.profiling_verbosity,
                 'enable_debug_output': args.enable_debug_output,
